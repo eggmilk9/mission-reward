@@ -10,6 +10,9 @@
         body { font-family: 'Nanum Gothic', sans-serif; background-color: #F0F4F8; }
         .ticket-bounce { animation: bounce 1s infinite alternate; }
         @keyframes bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-10px); } }
+        /* 터치 영역 강조용 애니메이션 */
+        .click-pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
     </style>
 </head>
 <body class="p-4 md:p-8 select-none">
@@ -41,6 +44,7 @@
 
         <!-- 리워드 및 티켓함 -->
         <div class="space-y-4">
+            <!-- 포인트 보드 -->
             <div class="bg-gradient-to-br from-yellow-400 to-orange-400 p-6 rounded-3xl shadow-md text-white">
                 <p class="text-sm font-bold opacity-90">현재 모은 포인트</p>
                 <div class="flex items-baseline gap-1 mt-2">
@@ -53,16 +57,20 @@
                 <p class="text-xs mt-2 opacity-80 text-right"><span id="next-ticket-p">100</span>P 달성 시 위시 티켓 획득!</p>
             </div>
 
-            <div class="bg-white p-6 rounded-3xl shadow-md border border-orange-50 text-center">
-                <h3 class="text-gray-700 font-bold text-sm mb-3 text-left">🎟️ 나의 위시 티켓함</h3>
-                <div class="flex justify-center items-center gap-4 bg-orange-50 p-4 rounded-2xl">
+            <!-- 티켓 보관함 (클릭 가능하도록 개선) -->
+            <div onclick="openTicketBoxModal()" class="click-pulse bg-white p-6 rounded-3xl shadow-md border-2 border-orange-200 text-center cursor-pointer hover:bg-orange-50/50 transition-all active:scale-95">
+                <h3 class="text-gray-700 font-bold text-sm mb-3 text-left flex justify-between items-center">
+                    <span>🎟️ 나의 위시 티켓함</span>
+                    <span class="text-xs text-blue-500 font-bold animate-pulse">열기 🔍</span>
+                </h3>
+                <div class="flex justify-center items-center gap-4 bg-orange-100/70 p-4 rounded-2xl">
                     <span class="text-4xl">🎫</span>
                     <div class="text-left">
                         <p class="text-xs text-gray-500 font-bold">보유 중인 티켓</p>
                         <p class="text-2xl font-extrabold text-orange-500"><span id="ticket-count-display">0</span>장</p>
                     </div>
                 </div>
-                <p class="text-xs text-gray-400 mt-3">티켓은 부모님께 원하는 소원으로 바꿀 수 있어요!</p>
+                <p class="text-[11px] text-gray-400 mt-3 font-bold">눌러서 소원 쿠폰 내용을 적어보세요!</p>
             </div>
         </div>
     </div>
@@ -101,7 +109,7 @@
                     <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-pointer"><input type="checkbox" name="days" value="4" checked> 목</label>
                     <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-pointer"><input type="checkbox" name="days" value="5" checked> 금</label>
                     <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-pointer"><input type="checkbox" name="days" value="6"> 토</label>
-                    <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-pointer"><input type="pointer"><input type="checkbox" name="days" value="0"> 일</label>
+                    <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-pointer"><input type="checkbox" name="days" value="0"> 일</label>
                 </div>
             </div>
             <div class="sm:col-span-2 flex justify-between items-center mt-2">
@@ -116,7 +124,7 @@
         </div>
     </div>
 
-    <!-- 🎉 팝업 모달 -->
+    <!-- 🎉 1단계: 티켓 즉시 획득 축하 팝업 모달 -->
     <div id="ticket-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 hidden p-4">
         <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center border-4 border-yellow-400 relative overflow-hidden">
             <span class="text-6xl block mb-2">🎉</span>
@@ -126,12 +134,39 @@
                 <p class="text-xs uppercase tracking-widest opacity-80 font-bold">WISH TICKET</p>
                 <p class="text-xl font-black my-1">✨ 소원 권 ✨</p>
             </div>
-            <button onclick="closeModal()" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 rounded-xl transition">확인 완료 🚀</button>
+            <button onclick="closeModal()" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 rounded-xl transition">티켓함에 넣기 🚀</button>
+        </div>
+    </div>
+
+    <!-- 🎫 2단계: 아이전용 위시 티켓함 상세보기 모달 -->
+    <div id="ticket-box-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 hidden p-4">
+        <div class="bg-white p-6 rounded-3xl shadow-2xl max-w-md w-full border-2 border-orange-300 flex flex-col max-h-[85vh]">
+            <!-- 모달 헤더 -->
+            <div class="flex justify-between items-center pb-4 border-b border-gray-100">
+                <div>
+                    <h2 class="text-xl font-black text-gray-800">🎟️ 나의 비밀 위시 티켓함</h2>
+                    <p class="text-xs text-gray-400 mt-0.5 font-bold">총 <span id="modal-ticket-count" class="text-orange-500 font-extrabold">0</span>장의 소원이 있어요!</p>
+                </div>
+                <button onclick="closeTicketBoxModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold px-2">✕</button>
+            </div>
+
+            <!-- 티켓 목록 (스크롤 가능 영역) -->
+            <div id="modal-ticket-list" class="flex-1 overflow-y-auto my-4 space-y-4 pr-1 max-h-96">
+                <!-- 자바스크립트로 소원 티켓 리스트 주입 -->
+            </div>
+
+            <!-- 하단 닫기 -->
+            <div class="pt-2">
+                <button onclick="closeTicketBoxModal()" class="w-full bg-orange-400 hover:bg-orange-500 text-white font-bold py-3 rounded-xl transition shadow-md">
+                    수정 완료하고 돌아가기 👍
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
-        let state = { tasks: [], points: 0, tickets: 0, ticketThreshold: 100, completedLog: {} };
+        // 개별 티켓 이름을 유연하게 보관하기 위해 ticketList 배열 구조 도입
+        let state = { tasks: [], points: 0, ticketList: [], ticketThreshold: 100, completedLog: {} };
         const todayStr = new Date().toISOString().split('T')[0];
         let isAdminMode = false;
 
@@ -140,8 +175,17 @@
             if (saved) {
                 state = JSON.parse(saved);
                 if(!state.completedLog) state.completedLog = {};
+                // 하위 호환성 유지: 기존 데이터에 ticketList가 없고 tickets(숫자)만 있던 경우 자동 배열 변환
+                if(!state.ticketList) {
+                    state.ticketList = [];
+                    const oldTicketsCount = state.tickets || 0;
+                    for(let i=0; i<oldTicketsCount; i++) {
+                        state.ticketList.push({ id: Date.now() + i, name: "✨ 터치해서 소원을 적으세요!" });
+                    }
+                    delete state.tickets;
+                }
             } else {
-                state.tasks = []; // 샘플 미션 완전 삭제 (빈 상태로 시작)
+                state.tasks = []; // 빈 상태로 깔끔하게 시작
             }
             document.getElementById('new-task-start').value = todayStr;
             document.getElementById('new-task-end').value = "2026-12-31";
@@ -151,6 +195,7 @@
         };
 
         function saveState() { localStorage.setItem('child_reward_pad', JSON.stringify(state)); }
+        
         function displayDate() {
             const days = ['일', '월', '화', '수', '목', '금', '토'];
             const d = new Date();
@@ -191,7 +236,7 @@
                 todaysTasks.forEach(task => {
                     const isChecked = doneList.includes(task.id);
                     const item = document.createElement('div');
-                    item.className = `flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer ${isChecked ? 'bg-green-50 border-green-200 opacity-70' : 'bg-gray-50 border-gray-100'}`;
+                    item.className = `flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer ${isChecked ? 'bg-green-50 border-green-200 opacity-70' : 'bg-gray-50 border-gray-100 hover:border-blue-200'}`;
                     item.onclick = () => toggleTask(task.id, task.points);
                     item.innerHTML = `
                         <div class="flex items-center gap-3">
@@ -204,12 +249,16 @@
                 });
             }
 
+            // 메인 대시보드 티켓 개수 동기화
+            const ticketCount = state.ticketList.length;
             document.getElementById('current-points').innerText = state.points;
-            document.getElementById('ticket-count-display').innerText = state.tickets;
+            document.getElementById('ticket-count-display').innerText = ticketCount;
             document.getElementById('next-ticket-p').innerText = state.ticketThreshold;
+            
             const progressPercent = Math.min((state.points / state.ticketThreshold) * 100, 100);
             document.getElementById('point-progress').style.width = `${progressPercent}%`;
 
+            // 관리자 메뉴 리스트 갱신
             const adminListDiv = document.getElementById('admin-task-list');
             adminListDiv.innerHTML = "";
             state.tasks.forEach(t => {
@@ -228,23 +277,87 @@
             });
         }
 
+        // ⭐ 실수 취소 연동 롤백 핵심 로직
         function toggleTask(taskId, points) {
             if (!state.completedLog[todayStr]) state.completedLog[todayStr] = [];
             const index = state.completedLog[todayStr].indexOf(taskId);
+            
             if (index > -1) {
+                // [체크 해제] 실수 취소 모드
                 state.completedLog[todayStr].splice(index, 1);
-                state.points = Math.max(0, state.points - points);
+                state.points -= points;
+
+                // 포인트가 0보다 아래로 내려갔는데 보유한 티켓이 있다면 최근 티켓 1장을 회수하고 포인트를 역산 복원
+                while (state.points < 0 && state.ticketList.length > 0) {
+                    state.ticketList.pop(); // 가장 최근 티켓 강제 회수
+                    state.points += state.ticketThreshold; // 차감되었던 기준선 포인트 다시 복구
+                }
+                
+                // 티켓이 아예 없어서 포인트 복구가 안 됨에도 음수일 경우 방지
+                if (state.points < 0) state.points = 0;
+
             } else {
+                // [체크 완료] 정상 등록 모드
                 state.completedLog[todayStr].push(taskId);
                 state.points += points;
-                if (state.points >= state.ticketThreshold) {
+
+                // 포인트 누적이 임계치를 넘을 때마다 연속 발급 처리
+                while (state.points >= state.ticketThreshold) {
                     state.points -= state.ticketThreshold;
-                    state.tickets += 1;
+                    state.ticketList.push({
+                        id: Date.now() + Math.random(),
+                        name: "✨ 터치해서 소원을 적으세요!"
+                    });
                     showTicketModal();
                 }
             }
             saveState();
             render();
+        }
+
+        // 🎫 티켓함 모달 열기 및 내부 목록 그리기
+        function openTicketBoxModal() {
+            document.getElementById('modal-ticket-count').innerText = state.ticketList.length;
+            const container = document.getElementById('modal-ticket-list');
+            container.innerHTML = "";
+
+            if(state.ticketList.length === 0) {
+                container.innerHTML = `<p class="text-center py-12 text-gray-400 font-bold text-sm">아직 소원 티켓이 없어요! 😭<br>미션을 완료해서 포인트를 모아보세요!</p>`;
+            } else {
+                state.ticketList.forEach((ticket, idx) => {
+                    const card = document.createElement('div');
+                    card.className = "bg-gradient-to-r from-orange-400 to-amber-400 p-4 rounded-2xl shadow-md text-white border-2 border-dashed border-white/60 relative";
+                    card.innerHTML = `
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs uppercase font-black tracking-widest bg-white/20 px-2 py-0.5 rounded-md">WISH COUPON #${idx + 1}</span>
+                            <span class="text-xl">👑</span>
+                        </div>
+                        <div class="mt-1">
+                            <label class="block text-[10px] text-white/80 font-bold mb-1">✍️ 이 쿠폰의 소원을 입력하세요:</label>
+                            <input type="text" value="${ticket.name}" 
+                                onchange="updateTicketName(${ticket.id}, this.value)"
+                                placeholder="예: 게임시간 30분 연장, 원하는 책 구매" 
+                                class="w-full p-2 rounded-xl border-none bg-white text-gray-800 font-bold text-sm focus:ring-2 focus:ring-amber-300 outline-none">
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+            document.getElementById('ticket-box-modal').classList.remove('hidden');
+        }
+
+        function closeTicketBoxModal() {
+            document.getElementById('ticket-box-modal').classList.add('hidden');
+            render();
+        }
+
+        // 아이가 텍스트박스 내용을 바꾸면 실시간 실시간 데이터 매핑 수정
+        function updateTicketName(id, newName) {
+            const ticket = state.ticketList.find(t => t.id === id);
+            if(ticket) {
+                ticket.name = newName.trim() || "✨ 터치해서 소원을 적으세요!";
+                saveState();
+            }
         }
 
         function addTask() {
@@ -261,6 +374,7 @@
             saveState();
             render();
             document.getElementById('new-task-name').value = "";
+            alert("미션이 정상적으로 등록되었습니다!");
         }
 
         function deleteTask(id) {
@@ -272,12 +386,12 @@
         }
 
         function resetAllData() {
-            if(confirm("⚠️ 경고: 모은 포인트, 티켓, 등록된 모든 미션이 전부 삭제됩니다. 완전히 처음 상태로 초기화할까요?")) {
+            if(confirm("⚠️ 경고: 모은 포인트, 티켓, 모든 미션이 전부 완전히 처음 상태로 초기화됩니다! 그래도 할까요?")) {
                 localStorage.removeItem('child_reward_pad');
-                state = { tasks: [], points: 0, tickets: 0, ticketThreshold: 100, completedLog: {} };
+                state = { tasks: [], points: 0, ticketList: [], ticketThreshold: 100, completedLog: {} };
                 saveState();
                 render();
-                alert("모든 데이터가 깨끗하게 초기화되었습니다!");
+                alert("초기화 완료!");
             }
         }
 
