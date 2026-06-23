@@ -172,7 +172,6 @@
     </div>
 
     <script>
-        // 스마트기기의 실제 로컬 시각(KST)을 구하는 함수
         function getLocalTodayStr() {
             const d = new Date();
             const y = d.getFullYear();
@@ -181,6 +180,7 @@
             return `${y}-${m}-${date}`;
         }
 
+        // 기본 상태값 구조 선언
         let state = { tasks: [], points: 0, ticketList: [], ticketThreshold: 100, completedLog: {}, appTitle: "이준이의 해야 할 일" };
         let viewDateStr = getLocalTodayStr(); 
         let isAdminMode = false;
@@ -190,18 +190,33 @@
         let calMonth = new Date().getMonth();
 
         window.onload = function() {
-            const saved = localStorage.getItem('child_reward_pad');
-            if (saved) {
-                state = JSON.parse(saved);
-                if(!state.completedLog) state.completedLog = {};
-                if(!state.ticketList) state.ticketList = [];
-                if(!state.appTitle) state.appTitle = "이준이의 해야 할 일";
+            try {
+                const saved = localStorage.getItem('child_reward_pad');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed && typeof parsed === 'object') {
+                        // 구버전 데이터가 존재할 때, 누락된 항목이 있어도 에러 없이 안전하게 덮어씌우는 구조 (Object Spread 방어)
+                        if (parsed.tasks && Array.isArray(parsed.tasks)) state.tasks = parsed.tasks;
+                        if (typeof parsed.points === 'number') state.points = parsed.points;
+                        if (parsed.ticketList && Array.isArray(parsed.ticketList)) state.ticketList = parsed.ticketList;
+                        if (typeof parsed.ticketThreshold === 'number') state.ticketThreshold = parsed.ticketThreshold;
+                        if (parsed.completedLog && typeof parsed.completedLog === 'object') state.completedLog = parsed.completedLog;
+                        if (parsed.appTitle && typeof parsed.appTitle === 'string') state.appTitle = parsed.appTitle;
+                    }
+                }
+            } catch (e) {
+                console.error("로컬 스토리지 데이터 파싱 에러 발생, 안전 모드로 변환합니다.", e);
             }
-            viewDateStr = getLocalTodayStr(); // 첫 진입 시 실시간 오늘 날짜 강제 바인딩
-            document.getElementById('new-task-start').value = getLocalTodayStr();
-            document.getElementById('new-task-end').value = "2026-12-31";
-            document.getElementById('ticket-threshold-setting').value = state.ticketThreshold;
-            document.getElementById('edit-app-title').value = state.appTitle;
+            
+            viewDateStr = getLocalTodayStr(); 
+            const d = new Date();
+            calYear = d.getFullYear();
+            calMonth = d.getMonth();
+
+            const inputStart = document.getElementById('new-task-start'); if(inputStart) inputStart.value = viewDateStr;
+            const inputEnd = document.getElementById('new-task-end'); if(inputEnd) inputEnd.value = "2026-12-31";
+            const inputThreshold = document.getElementById('ticket-threshold-setting'); if(inputThreshold) inputThreshold.value = state.ticketThreshold || 100;
+            const inputTitle = document.getElementById('edit-app-title'); if(inputTitle) inputTitle.value = state.appTitle || "이준이의 해야 할 일";
             
             displayDate();
             render();
@@ -210,15 +225,21 @@
         function saveState() { localStorage.setItem('child_reward_pad', JSON.stringify(state)); }
         
         function displayDate() {
-            const days = ['일', '월', '화', '수', '목', '금', '토'];
-            const d = new Date();
-            document.getElementById('current-date').innerText = `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]}요일)`;
+            try {
+                const days = ['일', '월', '화', '수', '목', '금', '토'];
+                const d = new Date();
+                const dateEl = document.getElementById('current-date');
+                if(dateEl) {
+                    dateEl.innerText = `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]}요일)`;
+                }
+            } catch (e) { console.error(e); }
         }
 
         function updateAppTitle(val) {
             const title = val.trim() || "이준이의 해야 할 일";
             state.appTitle = title;
-            document.getElementById('app-title-display').innerText = title;
+            const titleDisp = document.getElementById('app-title-display');
+            if(titleDisp) titleDisp.innerText = title;
             saveState();
         }
 
@@ -227,13 +248,15 @@
             const adminView = document.getElementById('admin-view');
             const modeBtn = document.getElementById('mode-btn');
             if (isAdminMode) {
-                adminView.classList.remove('hidden');
-                modeBtn.innerText = "✕"; 
-                document.getElementById('edit-app-title').value = state.appTitle;
+                if(adminView) adminView.classList.remove('hidden');
+                if(modeBtn) modeBtn.innerText = "✕"; 
+                const inputTitle = document.getElementById('edit-app-title');
+                if(inputTitle) inputTitle.value = state.appTitle;
             } else {
-                adminView.classList.add('hidden');
-                modeBtn.innerText = "+";
-                state.ticketThreshold = parseInt(document.getElementById('ticket-threshold-setting').value) || 100;
+                if(adminView) adminView.classList.add('hidden');
+                if(modeBtn) modeBtn.innerText = "+";
+                const inputThreshold = document.getElementById('ticket-threshold-setting');
+                if(inputThreshold) state.ticketThreshold = parseInt(inputThreshold.value) || 100;
                 cancelEditMode();
                 saveState();
                 render();
@@ -241,117 +264,144 @@
         }
 
         function render() {
-            const todayStr = getLocalTodayStr(); // 렌더링 시마다 실시간 오늘 측정 (시차 및 자정 방어)
-            document.getElementById('app-title-display').innerText = state.appTitle;
+            try {
+                const todayStr = getLocalTodayStr(); 
+                const titleDisp = document.getElementById('app-title-display');
+                if(titleDisp) titleDisp.innerText = state.appTitle || "이준이의 해야 할 일";
 
-            const targetDate = new Date(viewDateStr.replace(/-/g, '/')); 
-            const currentDayOfWeek = targetDate.getDay();
-            
-            if(viewDateStr === todayStr) {
-                document.getElementById('todo-date-label').innerText = "오늘";
-                document.getElementById('back-to-today-btn').classList.add('hidden');
-            } else {
-                const md = viewDateStr.split('-');
-                // [미리보기] 글자 완벽 삭제 및 깔끔한 날짜 표기
-                document.getElementById('todo-date-label').innerText = `${parseInt(md[1])}월 ${parseInt(md[2])}일`;
-                document.getElementById('back-to-today-btn').classList.remove('hidden');
-            }
+                if (!state.tasks || !Array.isArray(state.tasks)) state.tasks = [];
+                if (!state.completedLog || typeof state.completedLog !== 'object') state.completedLog = {};
+                if (!state.ticketList || !Array.isArray(state.ticketList)) state.ticketList = [];
 
-            const todaysTasks = state.tasks.filter(t => t.startDate <= viewDateStr && t.endDate >= viewDateStr && t.days.includes(currentDayOfWeek));
-            document.getElementById('task-count').innerText = `${todaysTasks.length}개`;
+                const targetDate = new Date(viewDateStr.replace(/-/g, '/')); 
+                const currentDayOfWeek = isNaN(targetDate.getDay()) ? new Date().getDay() : targetDate.getDay();
+                
+                const todoDateLabel = document.getElementById('todo-date-label');
+                const backBtn = document.getElementById('back-to-today-btn');
 
-            if (!state.completedLog[viewDateStr]) state.completedLog[viewDateStr] = [];
-            const doneList = state.completedLog[viewDateStr];
+                if(viewDateStr === todayStr) {
+                    if(todoDateLabel) todoDateLabel.innerText = "오늘";
+                    if(backBtn) backBtn.classList.add('hidden');
+                } else {
+                    const md = viewDateStr.split('-');
+                    if(todoDateLabel && md.length >= 3) {
+                        todoDateLabel.innerText = `${parseInt(md[1])}월 ${parseInt(md[2])}일`;
+                    }
+                    if(backBtn) backBtn.classList.remove('hidden');
+                }
 
-            const todoListDiv = document.getElementById('todo-list');
-            todoListDiv.innerHTML = "";
+                const todaysTasks = state.tasks.filter(t => t && t.startDate <= viewDateStr && t.endDate >= viewDateStr && Array.isArray(t.days) && t.days.includes(currentDayOfWeek));
+                const taskCount = document.getElementById('task-count');
+                if(taskCount) taskCount.innerText = `${todaysTasks.length}개`;
 
-            if (todaysTasks.length === 0) {
-                todoListDiv.innerHTML = `<p class="text-center py-8 text-gray-400 font-bold">지정된 미션이 없는 날입니다. 🌟</p>`;
-            } else {
-                todaysTasks.forEach(task => {
-                    const isChecked = doneList.includes(task.id);
-                    const item = document.createElement('div');
-                    item.className = `flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer ${isChecked ? 'bg-green-50 border-green-200 opacity-70' : 'bg-gray-50 border-gray-100 hover:border-blue-200'}`;
-                    item.onclick = () => toggleTask(task.id, task.points);
-                    item.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <div class="w-7 h-7 rounded-full border-2 flex items-center justify-center font-bold text-sm ${isChecked ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 text-transparent bg-white'}">✓</div>
-                            <span class="font-bold text-base ${isChecked ? 'line-through text-gray-400' : 'text-gray-700'}">${task.name}</span>
-                        </div>
-                        <span class="bg-yellow-100 text-yellow-700 font-extrabold text-xs py-1 px-2.5 rounded-lg">+${task.points}P</span>
-                    `;
-                    todoListDiv.appendChild(item);
-                });
-            }
+                if (!state.completedLog[viewDateStr]) state.completedLog[viewDateStr] = [];
+                const doneList = state.completedLog[viewDateStr];
 
-            document.getElementById('current-points').innerText = state.points;
-            document.getElementById('ticket-count-display').innerText = state.ticketList.length;
-            document.getElementById('next-ticket-p').innerText = state.ticketThreshold;
-            const progressPercent = Math.min((state.points / state.ticketThreshold) * 100, 100);
-            document.getElementById('point-progress').style.width = `${progressPercent}%`;
+                const todoListDiv = document.getElementById('todo-list');
+                if(todoListDiv) {
+                    todoListDiv.innerHTML = "";
+                    if (todaysTasks.length === 0) {
+                        todoListDiv.innerHTML = `<p class="text-center py-8 text-gray-400 font-bold">지정된 미션이 없는 날입니다. 🌟</p>`;
+                    } else {
+                        todaysTasks.forEach(task => {
+                            if(!task) return;
+                            const isChecked = Array.isArray(doneList) && doneList.includes(task.id);
+                            const item = document.createElement('div');
+                            item.className = `flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer ${isChecked ? 'bg-green-50 border-green-200 opacity-70' : 'bg-gray-50 border-gray-100 hover:border-blue-200'}`;
+                            item.onclick = () => toggleTask(task.id, task.points);
+                            item.innerHTML = `
+                                <div class="flex items-center gap-3">
+                                    <div class="w-7 h-7 rounded-full border-2 flex items-center justify-center font-bold text-sm ${isChecked ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 text-transparent bg-white'}">✓</div>
+                                    <span class="font-bold text-base ${isChecked ? 'line-through text-gray-400' : 'text-gray-700'}">${task.name || ''}</span>
+                                </div>
+                                <span class="bg-yellow-100 text-yellow-700 font-extrabold text-xs py-1 px-2.5 rounded-lg">+${task.points || 0}P</span>
+                            `;
+                            todoListDiv.appendChild(item);
+                        });
+                    }
+                }
 
-            const adminListDiv = document.getElementById('admin-task-list');
-            adminListDiv.innerHTML = "";
-            state.tasks.forEach(t => {
-                const dayNames = ['일','월','화','수','목','금','토'];
-                const tDays = t.days.map(idx => dayNames[idx]).join(', ');
-                const row = document.createElement('div');
-                row.className = `flex justify-between items-center p-3 rounded-xl border ${editingTaskId === t.id ? 'bg-purple-50 border-purple-300 animate-pulse' : 'bg-gray-50 border-gray-200'}`;
-                row.innerHTML = `
-                    <div>
-                        <p class="font-bold text-gray-800">${t.name} <span class="text-purple-600">(${t.points}P)</span></p>
-                        <p class="text-xs text-gray-400">📅 ${t.startDate} ~ ${t.endDate} | 🔁 [${tDays}]</p>
-                    </div>
-                    <div class="flex gap-1">
-                        <button onclick="startEditTask(${t.id})" class="text-blue-500 hover:text-blue-700 font-bold px-3 py-1.5 bg-blue-50 rounded-xl transition text-xs">수정</button>
-                        <button onclick="deleteTask(${t.id})" class="text-red-500 hover:text-red-700 font-bold px-3 py-1.5 bg-red-50 rounded-xl transition text-xs">삭제</button>
-                    </div>
-                `;
-                adminListDiv.appendChild(row);
-            });
+                const currPoints = document.getElementById('current-points'); if(currPoints) currPoints.innerText = state.points || 0;
+                const ticketCountDisp = document.getElementById('ticket-count-display'); if(ticketCountDisp) ticketCountDisp.innerText = state.ticketList.length;
+                const nextTicketP = document.getElementById('next-ticket-p'); if(nextTicketP) nextTicketP.innerText = state.ticketThreshold || 100;
+                
+                const pointProgress = document.getElementById('point-progress');
+                if(pointProgress) {
+                    const threshold = state.ticketThreshold || 100;
+                    const progressPercent = Math.min(((state.points || 0) / threshold) * 100, 100);
+                    pointProgress.style.width = `${progressPercent}%`;
+                }
 
-            renderCalendarGrid();
+                const adminListDiv = document.getElementById('admin-task-list');
+                if(adminListDiv) {
+                    adminListDiv.innerHTML = "";
+                    state.tasks.forEach(t => {
+                        if(!t) return;
+                        const dayNames = ['일','월','화','수','목','금','토'];
+                        const tDays = Array.isArray(t.days) ? t.days.map(idx => dayNames[idx]).join(', ') : '';
+                        const row = document.createElement('div');
+                        row.className = `flex justify-between items-center p-3 rounded-xl border ${editingTaskId === t.id ? 'bg-purple-50 border-purple-300 animate-pulse' : 'bg-gray-50 border-gray-200'}`;
+                        row.innerHTML = `
+                            <div>
+                                <p class="font-bold text-gray-800">${t.name || ''} <span class="text-purple-600">(${t.points || 0}P)</span></p>
+                                <p class="text-xs text-gray-400">📅 ${t.startDate || ''} ~ ${t.endDate || ''} | 🔁 [${tDays}]</p>
+                            </div>
+                            <div class="flex gap-1">
+                                <button onclick="startEditTask(${t.id})" class="text-blue-500 hover:text-blue-700 font-bold px-3 py-1.5 bg-blue-50 rounded-xl transition text-xs">수정</button>
+                                <button onclick="deleteTask(${t.id})" class="text-red-500 hover:text-red-700 font-bold px-3 py-1.5 bg-red-50 rounded-xl transition text-xs">삭제</button>
+                            </div>
+                        `;
+                        adminListDiv.appendChild(row);
+                    });
+                }
+
+                renderCalendarGrid();
+            } catch (err) { console.error("렌더링 에러 차단:", err); }
         }
 
         function renderCalendarGrid() {
-            const todayStr = getLocalTodayStr();
-            const monthLabels = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
-            document.getElementById('calendar-month-title').innerText = `${calYear}년 ${monthLabels[calMonth]}`;
-            
-            const gridContainer = document.getElementById('calendar-days-grid');
-            gridContainer.innerHTML = "";
-
-            const firstDayIndex = new Date(calYear, calMonth, 1).getDay();
-            const totalDays = new Date(calYear, calMonth + 1, 0).getDate();
-
-            for (let i = 0; i < firstDayIndex; i++) {
-                const emptyCell = document.createElement('div');
-                gridContainer.appendChild(emptyCell);
-            }
-
-            for (let day = 1; day <= totalDays; day++) {
-                const cellDateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const cell = document.createElement('div');
+            try {
+                const todayStr = getLocalTodayStr();
+                const monthLabels = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
                 
-                cell.innerText = day;
-                cell.className = `p-1.5 rounded-lg font-bold cursor-pointer transition-all active:scale-95 text-center `;
+                const monthTitle = document.getElementById('calendar-month-title');
+                if(monthTitle) monthTitle.innerText = `${calYear}년 ${monthLabels[calMonth]}`;
+                
+                const gridContainer = document.getElementById('calendar-days-grid');
+                if (!gridContainer) return;
+                gridContainer.innerHTML = "";
 
-                if (cellDateStr === todayStr) {
-                    cell.className += "border-2 border-blue-500 text-blue-600 "; 
-                }
-                if (cellDateStr === viewDateStr) {
-                    cell.className += "bg-blue-500 text-white shadow-sm "; 
-                } else if (cellDateStr !== todayStr) {
-                    cell.className += "text-gray-700 hover:bg-gray-100 "; 
+                const firstDayIndex = new Date(calYear, calMonth, 1).getDay();
+                const totalDays = new Date(calYear, calMonth + 1, 0).getDate();
+
+                for (let i = 0; i < firstDayIndex; i++) {
+                    const emptyCell = document.createElement('div');
+                    gridContainer.appendChild(emptyCell);
                 }
 
-                cell.onclick = () => {
-                    viewDateStr = cellDateStr;
-                    render();
-                };
-                gridContainer.appendChild(cell);
-            }
+                for (let day = 1; day <= totalDays; day++) {
+                    const cellDateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const cell = document.createElement('div');
+                    
+                    cell.innerText = day;
+                    cell.className = `p-1.5 rounded-lg font-bold cursor-pointer transition-all active:scale-95 text-center `;
+
+                    if (cellDateStr === todayStr) {
+                        cell.className += "border-2 border-blue-500 text-blue-600 "; 
+                    }
+                    if (cellDateStr === viewDateStr) {
+                        cell.className += "bg-blue-500 text-white shadow-sm "; 
+                    } else if (cellDateStr !== todayStr) {
+                        cell.className += "text-gray-700 hover:bg-gray-100 "; 
+                    }
+
+                    cell.onclick = () => {
+                        viewDateStr = cellDateStr;
+                        render();
+                    };
+                    gridContainer.appendChild(cell);
+                }
+            } catch (e) { console.error("달력 빌드 오류 방어:", e); }
         }
 
         function changeCalendarMonth(offset) {
@@ -401,54 +451,61 @@
         }
 
         function startEditTask(id) {
-            const task = state.tasks.find(t => t.id === id);
+            const task = state.tasks.find(t => t && t.id === id);
             if(!task) return;
 
             editingTaskId = id;
             
-            document.getElementById('admin-form-title').innerText = "📝 부모님 관리자 메뉴 (미션 데이터 수정 중)";
-            document.getElementById('new-task-name').value = task.name;
-            document.getElementById('new-task-start').value = task.startDate;
-            document.getElementById('new-task-end').value = task.endDate;
-            document.getElementById('new-task-points').value = task.points;
+            const formTitle = document.getElementById('admin-form-title'); if(formTitle) formTitle.innerText = "📝 부모님 관리자 메뉴 (미션 데이터 수정 중)";
+            const inputName = document.getElementById('new-task-name'); if(inputName) inputName.value = task.name || '';
+            const inputStart = document.getElementById('new-task-start'); if(inputStart) inputStart.value = task.startDate || '';
+            const inputEnd = document.getElementById('new-task-end'); if(inputEnd) inputEnd.value = task.endDate || '';
+            const inputPoints = document.getElementById('new-task-points'); if(inputPoints) inputPoints.value = task.points || 10;
 
             const checkboxes = document.querySelectorAll('input[name="days"]');
             checkboxes.forEach(cb => {
-                cb.checked = task.days.includes(parseInt(cb.value));
+                if(task.days && Array.isArray(task.days)) {
+                    cb.checked = task.days.includes(parseInt(cb.value));
+                }
             });
 
-            document.getElementById('submit-task-btn').innerText = "✏️ 미션 수정 완료";
-            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+            const submitBtn = document.getElementById('submit-task-btn'); if(submitBtn) submitBtn.innerText = "✏️ 미션 수정 완료";
+            const cancelBtn = document.getElementById('cancel-edit-btn'); if(cancelBtn) cancelBtn.classList.remove('hidden');
             
-            document.getElementById('admin-form-title').scrollIntoView({ behavior: 'smooth' });
+            if(formTitle) formTitle.scrollIntoView({ behavior: 'smooth' });
             render();
         }
 
         function cancelEditMode() {
             editingTaskId = null;
-            document.getElementById('admin-form-title').innerText = "🛠️ 부모님 관리자 메뉴 (미션 등록)";
-            document.getElementById('new-task-name').value = "";
-            document.getElementById('new-task-start').value = getLocalTodayStr();
-            document.getElementById('new-task-end').value = "2026-12-31";
-            document.getElementById('new-task-points').value = "10";
+            const formTitle = document.getElementById('admin-form-title'); if(formTitle) formTitle.innerText = "🛠️ 부모님 관리자 메뉴 (미션 등록)";
+            const inputName = document.getElementById('new-task-name'); if(inputName) inputName.value = "";
+            const inputStart = document.getElementById('new-task-start'); if(inputStart) inputStart.value = getLocalTodayStr();
+            const inputEnd = document.getElementById('new-task-end'); if(inputEnd) inputEnd.value = "2026-12-31";
+            const inputPoints = document.getElementById('new-task-points'); if(inputPoints) inputPoints.value = "10";
             
-            document.getElementById('submit-task-btn').innerText = "➕ 미션 등록하기";
-            document.getElementById('cancel-edit-btn').classList.add('hidden');
+            const submitBtn = document.getElementById('submit-task-btn'); if(submitBtn) submitBtn.innerText = "➕ 미션 등록하기";
+            const cancelBtn = document.getElementById('cancel-edit-btn'); if(cancelBtn) cancelBtn.classList.add('hidden');
             render();
         }
 
         function handleTaskSubmit() {
-            const name = document.getElementById('new-task-name').value.trim();
-            const startDate = document.getElementById('new-task-start').value;
-            const endDate = document.getElementById('new-task-end').value;
-            const points = parseInt(document.getElementById('new-task-points').value) || 10;
+            const nameEl = document.getElementById('new-task-name');
+            const startEl = document.getElementById('new-task-start');
+            const endEl = document.getElementById('new-task-end');
+            const pointsEl = document.getElementById('new-task-points');
+            
+            const name = nameEl ? nameEl.value.trim() : "";
+            const startDate = startEl ? startEl.value : getLocalTodayStr();
+            const endDate = endEl ? endEl.value : "2026-12-31";
+            const points = pointsEl ? (parseInt(pointsEl.value) || 10) : 10;
             const checkedDays = Array.from(document.querySelectorAll('input[name="days"]:checked')).map(el => parseInt(el.value));
 
             if (!name) { alert("미션 이름을 입력해주세요!"); return; }
             if (checkedDays.length === 0) { alert("요일을 선택해주세요!"); return; }
 
             if(editingTaskId !== null) {
-                const taskIndex = state.tasks.findIndex(t => t.id === editingTaskId);
+                const taskIndex = state.tasks.findIndex(t => t && t.id === editingTaskId);
                 if(taskIndex > -1) {
                     state.tasks[taskIndex] = { ...state.tasks[taskIndex], name, startDate, endDate, points, days: checkedDays };
                     alert("미션 수정이 완료되었습니다!");
@@ -456,7 +513,7 @@
                 cancelEditMode();
             } else {
                 state.tasks.push({ id: Date.now(), name, startDate, endDate, points, days: checkedDays });
-                document.getElementById('new-task-name').value = "";
+                if(nameEl) nameEl.value = "";
                 alert("새로운 미션이 정상적으로 등록되었습니다!");
                 render();
             }
@@ -466,22 +523,23 @@
         function deleteTask(id) {
             if(confirm("이 미션을 정말 삭제할까요?")) {
                 if(editingTaskId === id) cancelEditMode();
-                state.tasks = state.tasks.filter(t => t.id !== id);
+                state.tasks = state.tasks.filter(t => t && t.id !== id);
                 saveState();
                 render();
             }
         }
 
-        // 티켓 팝업 로직 생략 없이 완벽 포함
         function openTicketBoxModal() {
-            document.getElementById('modal-ticket-count').innerText = state.ticketList.length;
+            const modalCount = document.getElementById('modal-ticket-count'); if(modalCount) modalCount.innerText = state.ticketList.length;
             const container = document.getElementById('modal-ticket-list');
+            if (!container) return;
             container.innerHTML = "";
 
             if(state.ticketList.length === 0) {
                 container.innerHTML = `<p class="text-center py-12 text-gray-400 font-bold text-sm">아직 소원 티켓이 없어요! 😭<br>미션을 완료해서 포인트를 모아보세요!</p>`;
             } else {
                 state.ticketList.forEach((ticket, idx) => {
+                    if(!ticket) return;
                     const card = document.createElement('div');
                     card.className = "bg-gradient-to-r from-orange-400 to-amber-400 p-4 rounded-2xl shadow-md text-white border-2 border-dashed border-white/60 relative";
                     card.innerHTML = `
@@ -491,7 +549,7 @@
                         </div>
                         <div class="mt-1">
                             <label class="block text-[10px] text-white/80 font-bold mb-1">✍️ 이 쿠폰의 소원을 입력하세요:</label>
-                            <input type="text" value="${ticket.name}" 
+                            <input type="text" value="${ticket.name || ''}" 
                                 onchange="updateTicketName(${ticket.id}, this.value)"
                                 placeholder="예: 게임시간 30분 연장, 원하는 책 구매" 
                                 class="w-full p-2 rounded-xl border-none bg-white text-gray-800 font-bold text-sm focus:ring-2 focus:ring-amber-300 outline-none">
@@ -500,16 +558,16 @@
                     container.appendChild(card);
                 });
             }
-            document.getElementById('ticket-box-modal').classList.remove('hidden');
+            const boxModal = document.getElementById('ticket-box-modal'); if(boxModal) boxModal.classList.remove('hidden');
         }
 
         function closeTicketBoxModal() {
-            document.getElementById('ticket-box-modal').classList.add('hidden');
+            const boxModal = document.getElementById('ticket-box-modal'); if(boxModal) boxModal.classList.add('hidden');
             render();
         }
 
         function updateTicketName(id, newName) {
-            const ticket = state.ticketList.find(t => t.id === id);
+            const ticket = state.ticketList.find(t => t && t.id === id);
             if(ticket) {
                 ticket.name = newName.trim() || "✨ 터치해서 소원을 적으세요!";
                 saveState();
@@ -527,8 +585,8 @@
             }
         }
 
-        function showTicketModal() { document.getElementById('ticket-modal').classList.remove('hidden'); }
-        function closeModal() { document.getElementById('ticket-modal').classList.add('hidden'); }
+        function showTicketModal() { const modal = document.getElementById('ticket-modal'); if(modal) modal.classList.remove('hidden'); }
+        function closeModal() { const modal = document.getElementById('ticket-modal'); if(modal) modal.classList.add('hidden'); }
     </script>
 </body>
 </html>
