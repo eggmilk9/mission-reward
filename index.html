@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🚀 나의 리워드 패드</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap');
+        body { font-family: 'Nanum Gothic', sans-serif; background-color: #F0F4F8; }
+        .ticket-bounce { animation: bounce 1s infinite alternate; }
+        @keyframes bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-10px); } }
+    </style>
+</head>
+<body class="p-4 md:p-8 select-none">
+
+    <!-- 상단 헤더 -->
+    <div class="max-w-4xl mx-auto flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm">
+        <div>
+            <h1 class="text-xl md:text-2xl font-extrabold text-blue-600">🚀 오늘의 미션 행성</h1>
+            <p id="current-date" class="text-sm text-gray-500 font-bold mt-1"></p>
+        </div>
+        <button onclick="toggleMode()" id="mode-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-xl text-xs md:text-sm transition">
+            ⚙️ 부모님 관리 모드
+        </button>
+    </div>
+
+    <!-- 메인 컨텐츠 -->
+    <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- 할 일 목록 -->
+        <div id="child-view" class="md:col-span-2 space-y-4">
+            <div class="bg-white p-6 rounded-3xl shadow-md border border-blue-50">
+                <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <span>📝 오늘 할 일</span>
+                    <span id="task-count" class="bg-blue-100 text-blue-600 text-xs py-1 px-2.5 rounded-full font-bold">0개</span>
+                </h2>
+                <div id="todo-list" class="space-y-3"></div>
+            </div>
+        </div>
+
+        <!-- 리워드 및 티켓함 -->
+        <div class="space-y-4">
+            <div class="bg-gradient-to-br from-yellow-400 to-orange-400 p-6 rounded-3xl shadow-md text-white">
+                <p class="text-sm font-bold opacity-90">현재 모은 포인트</p>
+                <div class="flex items-baseline gap-1 mt-2">
+                    <span id="current-points" class="text-4xl font-extrabold">0</span>
+                    <span class="text-lg font-bold">P</span>
+                </div>
+                <div class="mt-4 bg-white/20 rounded-full h-3 overflow-hidden">
+                    <div id="point-progress" class="bg-white h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <p class="text-xs mt-2 opacity-80 text-right"><span id="next-ticket-p">100</span>P 달성 시 위시 티켓 획득!</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-3xl shadow-md border border-orange-50 text-center">
+                <h3 class="text-gray-700 font-bold text-sm mb-3 text-left">🎟️ 나의 위시 티켓함</h3>
+                <div class="flex justify-center items-center gap-4 bg-orange-50 p-4 rounded-2xl">
+                    <span class="text-4xl">🎫</span>
+                    <div class="text-left">
+                        <p class="text-xs text-gray-500 font-bold">보유 중인 티켓</p>
+                        <p class="text-2xl font-extrabold text-orange-500"><span id="ticket-count-display">0</span>장</p>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-400 mt-3">티켓은 부모님께 원하는 소원으로 바꿀 수 있어요!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 관리자 메뉴 -->
+    <div id="admin-view" class="max-w-4xl mx-auto mt-6 bg-white p-6 rounded-3xl shadow-md border-2 border-dashed border-gray-300 hidden">
+        <h2 class="text-lg font-bold text-purple-600 mb-4">🛠️ 부모님 관리자 메뉴</h2>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-2xl mb-6 text-sm">
+            <div class="sm:col-span-2">
+                <label class="block font-bold text-gray-700 mb-1">🎯 미션 이름</label>
+                <input type="text" id="new-task-name" placeholder="예: 수학 문제집 2장 풀기" class="w-full p-2.5 border rounded-xl bg-white">
+            </div>
+            <div>
+                <label class="block font-bold text-gray-700 mb-1">📅 시작일</label>
+                <input type="date" id="new-task-start" class="w-full p-2.5 border rounded-xl bg-white">
+            </div>
+            <div>
+                <label class="block font-bold text-gray-700 mb-1">📅 종료일</label>
+                <input type="date" id="new-task-end" class="w-full p-2.5 border rounded-xl bg-white">
+            </div>
+            <div>
+                <label class="block font-bold text-gray-700 mb-1">💎 완료 포인트</label>
+                <input type="number" id="new-task-points" value="10" min="1" class="w-full p-2.5 border rounded-xl bg-white">
+            </div>
+            <div>
+                <label class="block font-bold text-gray-700 mb-1">🎟️ 티켓 교환 기준 포인트</label>
+                <input type="number" id="ticket-threshold-setting" value="100" min="10" class="w-full p-2.5 border rounded-xl bg-white">
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block font-bold text-gray-700 mb-2">🗓️ 반복할 요일 선택</label>
+                <div class="flex flex-wrap gap-2">
+                    <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-pointer"><input type="checkbox" name="days" value="1" checked> 월</label>
+                    <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-pointer"><input type="checkbox" name="days" value="2" checked> 화</label>
+                    <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-pointer"><input type="checkbox" name="days" value="3" checked> 수</label>
+                    <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-lg border cursor-pointer"><input type="checkbox" name="days" value="4" checked> 목</label>
+                    <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-pointer"><input type="checkbox" name="days" value="5" checked> 금</label>
+                    <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-pointer"><input type="checkbox" name="days" value="6"> 토</label>
+                    <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-pointer"><input type="checkbox" name="days" value="0"> 일</label>
+                </div>
+            </div>
+            <div class="sm:col-span-2 text-right">
+                <button onclick="addTask()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-6 rounded-xl transition">➕ 미션 등록하기</button>
+            </div>
+        </div>
+
+        <div>
+            <h3 class="font-bold text-gray-700 mb-2">📋 등록된 전체 미션 목록</h3>
+            <div id="admin-task-list" class="space-y-2 text-sm"></div>
+        </div>
+    </div>
+
+    <!-- 🎉 팝업 모달 -->
+    <div id="ticket-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 hidden p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center border-4 border-yellow-400 relative overflow-hidden">
+            <span class="text-6xl block mb-2">🎉</span>
+            <h2 class="text-2xl font-extrabold text-gray-800">짜잔! 티켓 획득!</h2>
+            <p class="text-sm text-gray-500 font-bold mt-1">목표 포인트를 달성했어요!</p>
+            <div class="ticket-bounce my-6 bg-gradient-to-r from-orange-400 to-yellow-400 text-white p-4 rounded-xl shadow-md border-2 border-dashed border-white inline-block w-full">
+                <p class="text-xs uppercase tracking-widest opacity-80 font-bold">WISH TICKET</p>
+                <p class="text-xl font-black my-1">✨ 소원 권 ✨</p>
+            </div>
+            <button onclick="closeModal()" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 rounded-xl transition">확인 완료 🚀</button>
+        </div>
+    </div>
+
+    <script>
+        let state = { tasks: [], points: 0, tickets: 0, ticketThreshold: 100, completedLog: {} };
+        const todayStr = new Date().toISOString().split('T')[0];
+        let isAdminMode = false;
+
+        window.onload = function() {
+            const saved = localStorage.getItem('child_reward_pad');
+            if (saved) {
+                state = JSON.parse(saved);
+                if(!state.completedLog) state.completedLog = {};
+            } else {
+                state.tasks = [
+                    { id: 1, name: "📚 아침 독서 20분 하기", points: 10, startDate: todayStr, endDate: "2026-12-31", days: [1,2,3,4,5] },
+                    { id: 2, name: "🥦 식사 후 그릇 싱크대에 두기", points: 5, startDate: todayStr, endDate: "2026-12-31", days: [0,1,2,3,4,5,6] }
+                ];
+            }
+            document.getElementById('new-task-start').value = todayStr;
+            document.getElementById('new-task-end').value = "2026-12-31";
+            document.getElementById('ticket-threshold-setting').value = state.ticketThreshold;
+            displayDate();
+            render();
+        };
+
+        function saveState() { localStorage.setItem('child_reward_pad', JSON.stringify(state)); }
+        function displayDate() {
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            const d = new Date();
+            document.getElementById('current-date').innerText = `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]}요일)`;
+        }
+
+        function toggleMode() {
+            isAdminMode = !isAdminMode;
+            const adminView = document.getElementById('admin-view');
+            const modeBtn = document.getElementById('mode-btn');
+            if (isAdminMode) {
+                adminView.classList.remove('hidden');
+                modeBtn.innerText = "👦 아이 화면으로 돌아가기";
+            } else {
+                adminView.classList.add('hidden');
+                modeBtn.innerText = "⚙️ 부모님 관리 모드";
+                state.ticketThreshold = parseInt(document.getElementById('ticket-threshold-setting').value) || 100;
+                saveState();
+                render();
+            }
+        }
+
+        function render() {
+            const today = new Date();
+            const currentDayOfWeek = today.getDay();
+            const todaysTasks = state.tasks.filter(t => t.startDate <= todayStr && t.endDate >= todayStr && t.days.includes(currentDayOfWeek));
+            document.getElementById('task-count').innerText = `${todaysTasks.length}개`;
+
+            if (!state.completedLog[todayStr]) state.completedLog[todayStr] = [];
+            const doneList = state.completedLog[todayStr];
+
+            const todoListDiv = document.getElementById('todo-list');
+            todoListDiv.innerHTML = "";
+
+            if (todaysTasks.length === 0) {
+                todoListDiv.innerHTML = `<p class="text-center py-8 text-gray-400 font-bold">오늘 미션은 끝! 푹 쉬세요 🌟</p>`;
+            } else {
+                todaysTasks.forEach(task => {
+                    const isChecked = doneList.includes(task.id);
+                    const item = document.createElement('div');
+                    item.className = `flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer ${isChecked ? 'bg-green-50 border-green-200 opacity-70' : 'bg-gray-50 border-gray-100'}`;
+                    item.onclick = () => toggleTask(task.id, task.points);
+                    item.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="w-7 h-7 rounded-full border-2 flex items-center justify-center font-bold text-sm ${isChecked ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 text-transparent bg-white'}">✓</div>
+                            <span class="font-bold text-base ${isChecked ? 'line-through text-gray-400' : 'text-gray-700'}">${task.name}</span>
+                        </div>
+                        <span class="bg-yellow-100 text-yellow-700 font-extrabold text-xs py-1 px-2.5 rounded-lg">+${task.points}P</span>
+                    `;
+                    todoListDiv.appendChild(item);
+                });
+            }
+
+            document.getElementById('current-points').innerText = state.points;
+            document.getElementById('ticket-count-display').innerText = state.tickets;
+            document.getElementById('next-ticket-p').innerText = state.ticketThreshold;
+            const progressPercent = Math.min((state.points / state.ticketThreshold) * 100, 100);
+            document.getElementById('point-progress').style.width = `${progressPercent}%`;
+
+            const adminListDiv = document.getElementById('admin-task-list');
+            adminListDiv.innerHTML = "";
+            state.tasks.forEach(t => {
+                const dayNames = ['일','월','화','수','목','금','토'];
+                const tDays = t.days.map(idx => dayNames[idx]).join(', ');
+                const row = document.createElement('div');
+                row.className = "flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-200";
+                row.innerHTML = `
+                    <div>
+                        <p class="font-bold text-gray-800">${t.name} <span class="text-purple-600">(${t.points}P)</span></p>
+                        <p class="text-xs text-gray-400">📅 ${t.startDate} ~ ${t.endDate} | 🔁 [${tDays}]</p>
+                    </div>
+                    <button onclick="deleteTask(${t.id})" class="text-red-500 font-bold px-2>삭제</button>
+                `;
+                adminListDiv.appendChild(row);
+            });
+        }
+
+        function toggleTask(taskId, points) {
+            if (!state.completedLog[todayStr]) state.completedLog[todayStr] = [];
+            const index = state.completedLog[todayStr].indexOf(taskId);
+            if (index > -1) {
+                state.completedLog[todayStr].splice(index, 1);
+                state.points = Math.max(0, state.points - points);
+            } else {
+                state.completedLog[todayStr].push(taskId);
+                state.points += points;
+                if (state.points >= state.ticketThreshold) {
+                    state.points -= state.ticketThreshold;
+                    state.tickets += 1;
+                    showTicketModal();
+                }
+            }
+            saveState();
+            render();
+        }
+
+        function addTask() {
+            const name = document.getElementById('new-task-name').value.trim();
+            const startDate = document.getElementById('new-task-start').value;
+            const endDate = document.getElementById('new-task-end').value;
+            const points = parseInt(document.getElementById('new-task-points').value) || 10;
+            const checkedDays = Array.from(document.querySelectorAll('input[name="days"]:checked')).map(el => parseInt(el.value));
+
+            if (!name) { alert("미션 이름을 입력해주세요!"); return; }
+            if (checkedDays.length === 0) { alert("요일을 선택해주세요!"); return; }
+
+            state.tasks.push({ id: Date.now(), name, startDate, endDate, points, days: checkedDays });
+            saveState();
+            render();
+            document.getElementById('new-task-name').value = "";
+        }
+
+        function deleteTask(id) {
+            if(confirm("이 미션을 삭제할까요?")) {
+                state.tasks = state.tasks.filter(t => t.id !== id);
+                saveState();
+                render();
+            }
+        }
+
+        function showTicketModal() { document.getElementById('ticket-modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('ticket-modal').classList.add('hidden'); }
+    </script>
+</body>
+</html>
