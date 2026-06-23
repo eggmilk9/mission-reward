@@ -10,41 +10,40 @@
         body { font-family: 'Nanum Gothic', sans-serif; background-color: #F0F4F8; }
         .ticket-bounce { animation: bounce 1s infinite alternate; }
         @keyframes bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-10px); } }
-        /* 터치 영역 강조용 애니메이션 */
         .click-pulse { animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
     </style>
 </head>
 <body class="p-4 md:p-8 select-none">
 
-    <!-- 상단 헤더 -->
     <div class="max-w-4xl mx-auto flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm">
         <div>
-            <h1 class="text-xl md:text-2xl font-extrabold text-blue-600">🚀 오늘의 미션 행성</h1>
+            <h1 id="app-title-display" class="text-xl md:text-2xl font-extrabold text-blue-600">이준이의 해야 할 일</h1>
             <p id="current-date" class="text-sm text-gray-500 font-bold mt-1"></p>
         </div>
-        <button onclick="toggleMode()" id="mode-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-xl text-xs md:text-sm transition">
-            ⚙️ 부모님 관리 모드
+        <button onclick="toggleMode()" id="mode-btn" class="text-gray-300 hover:text-gray-500 font-bold p-2 text-xl transition bg-transparent border-none outline-none cursor-pointer">
+            +
         </button>
     </div>
 
-    <!-- 메인 컨텐츠 -->
     <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        <!-- 할 일 목록 -->
         <div id="child-view" class="md:col-span-2 space-y-4">
             <div class="bg-white p-6 rounded-3xl shadow-md border border-blue-50">
-                <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <span>📝 오늘 할 일</span>
-                    <span id="task-count" class="bg-blue-100 text-blue-600 text-xs py-1 px-2.5 rounded-full font-bold">0개</span>
+                <h2 class="text-lg font-bold text-gray-800 mb-4 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <span>📝 <span id="todo-date-label">오늘</span> 할 일</span>
+                        <span id="task-count" class="bg-blue-100 text-blue-600 text-xs py-1 px-2.5 rounded-full font-bold">0개</span>
+                    </div>
+                    <button id="back-to-today-btn" onclick="goToToday()" class="text-xs bg-blue-500 text-white px-3 py-1.5 rounded-xl font-bold hidden transition hover:bg-blue-600">
+                        오늘로 돌아가기 ↩️
+                    </button>
                 </h2>
                 <div id="todo-list" class="space-y-3"></div>
             </div>
         </div>
 
-        <!-- 리워드 및 티켓함 -->
         <div class="space-y-4">
-            <!-- 포인트 보드 -->
             <div class="bg-gradient-to-br from-yellow-400 to-orange-400 p-6 rounded-3xl shadow-md text-white">
                 <p class="text-sm font-bold opacity-90">현재 모은 포인트</p>
                 <div class="flex items-baseline gap-1 mt-2">
@@ -57,346 +56,22 @@
                 <p class="text-xs mt-2 opacity-80 text-right"><span id="next-ticket-p">100</span>P 달성 시 위시 티켓 획득!</p>
             </div>
 
-            <!-- 티켓 보관함 (클릭 가능하도록 개선) -->
-            <div onclick="openTicketBoxModal()" class="click-pulse bg-white p-6 rounded-3xl shadow-md border-2 border-orange-200 text-center cursor-pointer hover:bg-orange-50/50 transition-all active:scale-95">
+            <div onclick="openTicketBoxModal()" class="click-pulse bg-white p-5 rounded-3xl shadow-md border-2 border-orange-200 text-center cursor-pointer hover:bg-orange-50/50 transition-all active:scale-95">
                 <h3 class="text-gray-700 font-bold text-sm mb-3 text-left flex justify-between items-center">
                     <span>🎟️ 나의 위시 티켓함</span>
                     <span class="text-xs text-blue-500 font-bold animate-pulse">열기 🔍</span>
                 </h3>
-                <div class="flex justify-center items-center gap-4 bg-orange-100/70 p-4 rounded-2xl">
+                <div class="flex justify-center items-center gap-4 bg-orange-100/70 p-3 rounded-2xl">
                     <span class="text-4xl">🎫</span>
                     <div class="text-left">
                         <p class="text-xs text-gray-500 font-bold">보유 중인 티켓</p>
                         <p class="text-2xl font-extrabold text-orange-500"><span id="ticket-count-display">0</span>장</p>
                     </div>
                 </div>
-                <p class="text-[11px] text-gray-400 mt-3 font-bold">눌러서 소원 쿠폰 내용을 적어보세요!</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- 관리자 메뉴 -->
-    <div id="admin-view" class="max-w-4xl mx-auto mt-6 bg-white p-6 rounded-3xl shadow-md border-2 border-dashed border-gray-300 hidden">
-        <h2 class="text-lg font-bold text-purple-600 mb-4">🛠️ 부모님 관리자 메뉴 (미션 및 리워드 설정)</h2>
-        
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-2xl mb-6 text-sm">
-            <div class="sm:col-span-2">
-                <label class="block font-bold text-gray-700 mb-1">🎯 미션 이름</label>
-                <input type="text" id="new-task-name" placeholder="예: 수학 문제집 2장 풀기" class="w-full p-2.5 border rounded-xl bg-white">
-            </div>
-            <div>
-                <label class="block font-bold text-gray-700 mb-1">📅 시작일</label>
-                <input type="date" id="new-task-start" class="w-full p-2.5 border rounded-xl bg-white">
-            </div>
-            <div>
-                <label class="block font-bold text-gray-700 mb-1">📅 종료일</label>
-                <input type="date" id="new-task-end" class="w-full p-2.5 border rounded-xl bg-white">
-            </div>
-            <div>
-                <label class="block font-bold text-gray-700 mb-1">💎 완료 포인트</label>
-                <input type="number" id="new-task-points" value="10" min="1" class="w-full p-2.5 border rounded-xl bg-white">
-            </div>
-            <div>
-                <label class="block font-bold text-gray-700 mb-1">🎟️ 티켓 교환 기준 포인트</label>
-                <input type="number" id="ticket-threshold-setting" value="100" min="10" class="w-full p-2.5 border rounded-xl bg-white">
-            </div>
-            <div class="sm:col-span-2">
-                <label class="block font-bold text-gray-700 mb-2">🗓️ 반복할 요일 선택</label>
-                <div class="flex flex-wrap gap-2">
-                    <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-pointer"><input type="checkbox" name="days" value="1" checked> 월</label>
-                    <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-pointer"><input type="checkbox" name="days" value="2" checked> 화</label>
-                    <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-pointer"><input type="checkbox" name="days" value="3" checked> 수</label>
-                    <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-pointer"><input type="checkbox" name="days" value="4" checked> 목</label>
-                    <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-pointer"><input type="checkbox" name="days" value="5" checked> 금</label>
-                    <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-pointer"><input type="checkbox" name="days" value="6"> 토</label>
-                    <label class="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border cursor-pointer"><input type="checkbox" name="days" value="0"> 일</label>
-                </div>
-            </div>
-            <div class="sm:col-span-2 flex justify-between items-center mt-2">
-                <button onclick="resetAllData()" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2.5 px-4 rounded-xl transition text-xs">⚠️ 전체 초기화</button>
-                <button onclick="addTask()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-6 rounded-xl transition">➕ 미션 등록하기</button>
-            </div>
-        </div>
-
-        <div>
-            <h3 class="font-bold text-gray-700 mb-2">📋 등록된 전체 미션 목록</h3>
-            <div id="admin-task-list" class="space-y-2 text-sm"></div>
-        </div>
-    </div>
-
-    <!-- 🎉 1단계: 티켓 즉시 획득 축하 팝업 모달 -->
-    <div id="ticket-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 hidden p-4">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center border-4 border-yellow-400 relative overflow-hidden">
-            <span class="text-6xl block mb-2">🎉</span>
-            <h2 class="text-2xl font-extrabold text-gray-800">짜잔! 티켓 획득!</h2>
-            <p class="text-sm text-gray-500 font-bold mt-1">목표 포인트를 달성했어요!</p>
-            <div class="ticket-bounce my-6 bg-gradient-to-r from-orange-400 to-yellow-400 text-white p-4 rounded-xl shadow-md border-2 border-dashed border-white inline-block w-full">
-                <p class="text-xs uppercase tracking-widest opacity-80 font-bold">WISH TICKET</p>
-                <p class="text-xl font-black my-1">✨ 소원 권 ✨</p>
-            </div>
-            <button onclick="closeModal()" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 rounded-xl transition">티켓함에 넣기 🚀</button>
-        </div>
-    </div>
-
-    <!-- 🎫 2단계: 아이전용 위시 티켓함 상세보기 모달 -->
-    <div id="ticket-box-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 hidden p-4">
-        <div class="bg-white p-6 rounded-3xl shadow-2xl max-w-md w-full border-2 border-orange-300 flex flex-col max-h-[85vh]">
-            <!-- 모달 헤더 -->
-            <div class="flex justify-between items-center pb-4 border-b border-gray-100">
-                <div>
-                    <h2 class="text-xl font-black text-gray-800">🎟️ 나의 비밀 위시 티켓함</h2>
-                    <p class="text-xs text-gray-400 mt-0.5 font-bold">총 <span id="modal-ticket-count" class="text-orange-500 font-extrabold">0</span>장의 소원이 있어요!</p>
-                </div>
-                <button onclick="closeTicketBoxModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold px-2">✕</button>
             </div>
 
-            <!-- 티켓 목록 (스크롤 가능 영역) -->
-            <div id="modal-ticket-list" class="flex-1 overflow-y-auto my-4 space-y-4 pr-1 max-h-96">
-                <!-- 자바스크립트로 소원 티켓 리스트 주입 -->
-            </div>
-
-            <!-- 하단 닫기 -->
-            <div class="pt-2">
-                <button onclick="closeTicketBoxModal()" class="w-full bg-orange-400 hover:bg-orange-500 text-white font-bold py-3 rounded-xl transition shadow-md">
-                    수정 완료하고 돌아가기 👍
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // 개별 티켓 이름을 유연하게 보관하기 위해 ticketList 배열 구조 도입
-        let state = { tasks: [], points: 0, ticketList: [], ticketThreshold: 100, completedLog: {} };
-        const todayStr = new Date().toISOString().split('T')[0];
-        let isAdminMode = false;
-
-        window.onload = function() {
-            const saved = localStorage.getItem('child_reward_pad');
-            if (saved) {
-                state = JSON.parse(saved);
-                if(!state.completedLog) state.completedLog = {};
-                // 하위 호환성 유지: 기존 데이터에 ticketList가 없고 tickets(숫자)만 있던 경우 자동 배열 변환
-                if(!state.ticketList) {
-                    state.ticketList = [];
-                    const oldTicketsCount = state.tickets || 0;
-                    for(let i=0; i<oldTicketsCount; i++) {
-                        state.ticketList.push({ id: Date.now() + i, name: "✨ 터치해서 소원을 적으세요!" });
-                    }
-                    delete state.tickets;
-                }
-            } else {
-                state.tasks = []; // 빈 상태로 깔끔하게 시작
-            }
-            document.getElementById('new-task-start').value = todayStr;
-            document.getElementById('new-task-end').value = "2026-12-31";
-            document.getElementById('ticket-threshold-setting').value = state.ticketThreshold;
-            displayDate();
-            render();
-        };
-
-        function saveState() { localStorage.setItem('child_reward_pad', JSON.stringify(state)); }
-        
-        function displayDate() {
-            const days = ['일', '월', '화', '수', '목', '금', '토'];
-            const d = new Date();
-            document.getElementById('current-date').innerText = `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]}요일)`;
-        }
-
-        function toggleMode() {
-            isAdminMode = !isAdminMode;
-            const adminView = document.getElementById('admin-view');
-            const modeBtn = document.getElementById('mode-btn');
-            if (isAdminMode) {
-                adminView.classList.remove('hidden');
-                modeBtn.innerText = "👦 아이 화면으로 돌아가기";
-            } else {
-                adminView.classList.add('hidden');
-                modeBtn.innerText = "⚙️ 부모님 관리 모드";
-                state.ticketThreshold = parseInt(document.getElementById('ticket-threshold-setting').value) || 100;
-                saveState();
-                render();
-            }
-        }
-
-        function render() {
-            const today = new Date();
-            const currentDayOfWeek = today.getDay();
-            const todaysTasks = state.tasks.filter(t => t.startDate <= todayStr && t.endDate >= todayStr && t.days.includes(currentDayOfWeek));
-            document.getElementById('task-count').innerText = `${todaysTasks.length}개`;
-
-            if (!state.completedLog[todayStr]) state.completedLog[todayStr] = [];
-            const doneList = state.completedLog[todayStr];
-
-            const todoListDiv = document.getElementById('todo-list');
-            todoListDiv.innerHTML = "";
-
-            if (todaysTasks.length === 0) {
-                todoListDiv.innerHTML = `<p class="text-center py-8 text-gray-400 font-bold">현재 등록된 미션이 없거나 오늘 해야할 미션이 없습니다. 관리자 모드에서 추가해 주세요! 🌟</p>`;
-            } else {
-                todaysTasks.forEach(task => {
-                    const isChecked = doneList.includes(task.id);
-                    const item = document.createElement('div');
-                    item.className = `flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer ${isChecked ? 'bg-green-50 border-green-200 opacity-70' : 'bg-gray-50 border-gray-100 hover:border-blue-200'}`;
-                    item.onclick = () => toggleTask(task.id, task.points);
-                    item.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <div class="w-7 h-7 rounded-full border-2 flex items-center justify-center font-bold text-sm ${isChecked ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 text-transparent bg-white'}">✓</div>
-                            <span class="font-bold text-base ${isChecked ? 'line-through text-gray-400' : 'text-gray-700'}">${task.name}</span>
-                        </div>
-                        <span class="bg-yellow-100 text-yellow-700 font-extrabold text-xs py-1 px-2.5 rounded-lg">+${task.points}P</span>
-                    `;
-                    todoListDiv.appendChild(item);
-                });
-            }
-
-            // 메인 대시보드 티켓 개수 동기화
-            const ticketCount = state.ticketList.length;
-            document.getElementById('current-points').innerText = state.points;
-            document.getElementById('ticket-count-display').innerText = ticketCount;
-            document.getElementById('next-ticket-p').innerText = state.ticketThreshold;
-            
-            const progressPercent = Math.min((state.points / state.ticketThreshold) * 100, 100);
-            document.getElementById('point-progress').style.width = `${progressPercent}%`;
-
-            // 관리자 메뉴 리스트 갱신
-            const adminListDiv = document.getElementById('admin-task-list');
-            adminListDiv.innerHTML = "";
-            state.tasks.forEach(t => {
-                const dayNames = ['일','월','화','수','목','금','토'];
-                const tDays = t.days.map(idx => dayNames[idx]).join(', ');
-                const row = document.createElement('div');
-                row.className = "flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-200";
-                row.innerHTML = `
-                    <div>
-                        <p class="font-bold text-gray-800">${t.name} <span class="text-purple-600">(${t.points}P)</span></p>
-                        <p class="text-xs text-gray-400">📅 ${t.startDate} ~ ${t.endDate} | 🔁 [${tDays}]</p>
-                    </div>
-                    <button onclick="deleteTask(${t.id})" class="text-red-500 hover:text-red-700 font-bold px-3 py-1.5 bg-red-50 rounded-xl transition">삭제</button>
-                `;
-                adminListDiv.appendChild(row);
-            });
-        }
-
-        // ⭐ 실수 취소 연동 롤백 핵심 로직
-        function toggleTask(taskId, points) {
-            if (!state.completedLog[todayStr]) state.completedLog[todayStr] = [];
-            const index = state.completedLog[todayStr].indexOf(taskId);
-            
-            if (index > -1) {
-                // [체크 해제] 실수 취소 모드
-                state.completedLog[todayStr].splice(index, 1);
-                state.points -= points;
-
-                // 포인트가 0보다 아래로 내려갔는데 보유한 티켓이 있다면 최근 티켓 1장을 회수하고 포인트를 역산 복원
-                while (state.points < 0 && state.ticketList.length > 0) {
-                    state.ticketList.pop(); // 가장 최근 티켓 강제 회수
-                    state.points += state.ticketThreshold; // 차감되었던 기준선 포인트 다시 복구
-                }
-                
-                // 티켓이 아예 없어서 포인트 복구가 안 됨에도 음수일 경우 방지
-                if (state.points < 0) state.points = 0;
-
-            } else {
-                // [체크 완료] 정상 등록 모드
-                state.completedLog[todayStr].push(taskId);
-                state.points += points;
-
-                // 포인트 누적이 임계치를 넘을 때마다 연속 발급 처리
-                while (state.points >= state.ticketThreshold) {
-                    state.points -= state.ticketThreshold;
-                    state.ticketList.push({
-                        id: Date.now() + Math.random(),
-                        name: "✨ 터치해서 소원을 적으세요!"
-                    });
-                    showTicketModal();
-                }
-            }
-            saveState();
-            render();
-        }
-
-        // 🎫 티켓함 모달 열기 및 내부 목록 그리기
-        function openTicketBoxModal() {
-            document.getElementById('modal-ticket-count').innerText = state.ticketList.length;
-            const container = document.getElementById('modal-ticket-list');
-            container.innerHTML = "";
-
-            if(state.ticketList.length === 0) {
-                container.innerHTML = `<p class="text-center py-12 text-gray-400 font-bold text-sm">아직 소원 티켓이 없어요! 😭<br>미션을 완료해서 포인트를 모아보세요!</p>`;
-            } else {
-                state.ticketList.forEach((ticket, idx) => {
-                    const card = document.createElement('div');
-                    card.className = "bg-gradient-to-r from-orange-400 to-amber-400 p-4 rounded-2xl shadow-md text-white border-2 border-dashed border-white/60 relative";
-                    card.innerHTML = `
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs uppercase font-black tracking-widest bg-white/20 px-2 py-0.5 rounded-md">WISH COUPON #${idx + 1}</span>
-                            <span class="text-xl">👑</span>
-                        </div>
-                        <div class="mt-1">
-                            <label class="block text-[10px] text-white/80 font-bold mb-1">✍️ 이 쿠폰의 소원을 입력하세요:</label>
-                            <input type="text" value="${ticket.name}" 
-                                onchange="updateTicketName(${ticket.id}, this.value)"
-                                placeholder="예: 게임시간 30분 연장, 원하는 책 구매" 
-                                class="w-full p-2 rounded-xl border-none bg-white text-gray-800 font-bold text-sm focus:ring-2 focus:ring-amber-300 outline-none">
-                        </div>
-                    `;
-                    container.appendChild(card);
-                });
-            }
-            document.getElementById('ticket-box-modal').classList.remove('hidden');
-        }
-
-        function closeTicketBoxModal() {
-            document.getElementById('ticket-box-modal').classList.add('hidden');
-            render();
-        }
-
-        // 아이가 텍스트박스 내용을 바꾸면 실시간 실시간 데이터 매핑 수정
-        function updateTicketName(id, newName) {
-            const ticket = state.ticketList.find(t => t.id === id);
-            if(ticket) {
-                ticket.name = newName.trim() || "✨ 터치해서 소원을 적으세요!";
-                saveState();
-            }
-        }
-
-        function addTask() {
-            const name = document.getElementById('new-task-name').value.trim();
-            const startDate = document.getElementById('new-task-start').value;
-            const endDate = document.getElementById('new-task-end').value;
-            const points = parseInt(document.getElementById('new-task-points').value) || 10;
-            const checkedDays = Array.from(document.querySelectorAll('input[name="days"]:checked')).map(el => parseInt(el.value));
-
-            if (!name) { alert("미션 이름을 입력해주세요!"); return; }
-            if (checkedDays.length === 0) { alert("요일을 선택해주세요!"); return; }
-
-            state.tasks.push({ id: Date.now(), name, startDate, endDate, points, days: checkedDays });
-            saveState();
-            render();
-            document.getElementById('new-task-name').value = "";
-            alert("미션이 정상적으로 등록되었습니다!");
-        }
-
-        function deleteTask(id) {
-            if(confirm("이 미션을 정말 삭제할까요?")) {
-                state.tasks = state.tasks.filter(t => t.id !== id);
-                saveState();
-                render();
-            }
-        }
-
-        function resetAllData() {
-            if(confirm("⚠️ 경고: 모은 포인트, 티켓, 모든 미션이 전부 완전히 처음 상태로 초기화됩니다! 그래도 할까요?")) {
-                localStorage.removeItem('child_reward_pad');
-                state = { tasks: [], points: 0, ticketList: [], ticketThreshold: 100, completedLog: {} };
-                saveState();
-                render();
-                alert("초기화 완료!");
-            }
-        }
-
-        function showTicketModal() { document.getElementById('ticket-modal').classList.remove('hidden'); }
-        function closeModal() { document.getElementById('ticket-modal').classList.add('hidden'); }
-    </script>
-</body>
-</html>
+            <div class="bg-white p-5 rounded-3xl shadow-md border border-gray-100">
+                <div class="flex justify-between items-center mb-3">
+                    <button onclick="changeCalendarMonth(-1)" class="text-gray-400 hover:text-gray-600 font-bold px-2 text-sm">&lt;</button>
+                    <span id="calendar-month-title" class="font-extrabold text-gray-700 text-sm">2026년 06월</span>
+                    <button onclick="changeCalendarMonth(1)" class="text-gray-400
