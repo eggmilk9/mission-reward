@@ -79,7 +79,7 @@
             </div>
         </div>
 
-        <!-- 우측 사이드바 (쿠폰, 캘린더, 교환 일기) -->
+        <!-- 우측 사이드바 -->
         <div class="space-y-4">
             <!-- 소원쿠폰 보관함 -->
             <div onclick="openTicketBoxModal()" class="click-pulse bg-white p-5 rounded-3xl shadow-md border-2 border-orange-200 text-center cursor-pointer hover:bg-orange-50/50 transition-all active:scale-95">
@@ -109,16 +109,16 @@
                 <div id="calendar-days-grid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
             </div>
 
-            <!-- 📖 교환 일기 -->
+            <!-- 📖 전하고 싶은 말 -->
             <div class="bg-white p-5 rounded-3xl shadow-md border border-gray-100 space-y-3">
                 <h3 class="font-extrabold text-gray-700 text-sm flex items-center gap-1.5">
-                    <span>📖</span> <span id="story-title-date">오늘</span>의 교환 일기
+                    <span>📖</span> <span id="story-title-date">오늘</span> 전하고 싶은 말
                 </h3>
                 
-                <!-- 일기 내역 출력 영역 -->
+                <!-- 내역 출력 영역 -->
                 <div id="story-display-area" class="space-y-2 max-h-40 overflow-y-auto pr-1"></div>
                 
-                <!-- 일기 쓰기 영역 -->
+                <!-- 쓰기 영역 -->
                 <div class="bg-gray-50 p-3 rounded-2xl space-y-2.5 border border-gray-100">
                     <div class="flex gap-1.5">
                         <button id="writer-mom" onclick="selectStoryWriter('mom')" class="px-3 py-1 rounded-xl font-bold text-xs border transition-all bg-white border-gray-200 text-gray-600">
@@ -387,7 +387,7 @@
                     } else {
                         const unfinishedMandatory = mandatoryTasks.filter(t => !doneList.includes(t.id));
                         if(unfinishedMandatory.length === 0) {
-                            todoListDiv.innerHTML = `<div class="bg-green-50 p-4 rounded-2xl border border-green-200 text-center font-extrabold text-green-600 mb-2">🎉 와우! 필수 할 일을 완벽하게 끝마쳤어요! 대단해! 👍</div>`;
+                            todoListDiv.innerHTML = `<div class="bg-green-50 p-4 rounded-2xl border border-green-200 text-center font-extrabold text-green-600 mb-2">🎉 짝짝짝! 오늘 꼭 해야 할 일 완료! 👍</div>`;
                         }
 
                         mandatoryTasks.forEach(task => {
@@ -494,7 +494,7 @@
             const dayStories = state.stories[viewDateStr] || [];
 
             if(dayStories.length === 0) {
-                displayArea.innerHTML = `<p class="text-center py-4 text-gray-400 text-xs font-bold">아직 기록된 일기가 없어요 💬</p>`;
+                displayArea.innerHTML = `<p class="text-center py-4 text-gray-400 text-xs font-bold">아직 전하고 싶은 말이 없어요 💬</p>`;
                 return;
             }
 
@@ -535,7 +535,7 @@
             const inputEl = document.getElementById('story-input-text');
             if(!inputEl) return;
             const text = inputEl.value.trim();
-            if(!text) { alert("일기 내용을 입력해 주세요!"); return; }
+            if(!text) { alert("내용을 입력해 주세요!"); return; }
 
             if(!state.stories[viewDateStr]) state.stories[viewDateStr] = [];
             state.stories[viewDateStr].push({ writer: selectedWriter, text: text });
@@ -546,7 +546,7 @@
         }
 
         function deleteStory(index) {
-            if(confirm("이 일기를 삭제할까요?")) {
+            if(confirm("이 내용을 삭제할까요?")) {
                 if(state.stories[viewDateStr]) {
                     state.stories[viewDateStr].splice(index, 1);
                     if(state.stories[viewDateStr].length === 0) delete state.stories[viewDateStr];
@@ -662,7 +662,7 @@
             });
 
             const submitBtn = document.getElementById('submit-task-btn'); if(submitBtn) submitBtn.innerText = "✏️ 미션 수정 완료";
-            const cancelBtn = document.getElementById('cancel-edit-btn'); if(cancelBtn) cancelBtn.classList.remove('hidden');
+            const cancelBtn = document.getElementById('cancel-edit-btn'); if(cancelBtn) cancelBtn.classList.add('hidden');
             if(formTitle) formTitle.scrollIntoView({ behavior: 'smooth' });
             render();
         }
@@ -834,7 +834,7 @@
         }
 
         function resetAllData() {
-            if(confirm("⚠️ 모은 포인트, 쿠폰, 모든 미션과 일기가 전부 완전히 초기화됩니다! 그래도 할까요?")) {
+            if(confirm("⚠️ 모은 포인트, 쿠폰, 모든 미션과 내용이 전부 완전히 초기화됩니다! 그래도 할까요?")) {
                 localStorage.removeItem('child_reward_pad');
                 state = { tasks: [], points: 0, ticketList: [], ticketThreshold: 100, completedLog: {}, appTitle: "이준이의 해야 할 일", stories: {} };
                 cancelEditMode();
