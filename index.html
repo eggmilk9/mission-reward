@@ -112,7 +112,7 @@
             <!-- 📖 전하고 싶은 말 -->
             <div class="bg-white p-5 rounded-3xl shadow-md border border-gray-100 space-y-3">
                 <h3 class="font-extrabold text-gray-700 text-sm flex items-center gap-1.5">
-                    <span>📖</span> <span id="story-title-date">오늘</span> 전하고 싶은 말
+                    <span>📖</span> 전하고 싶은 말
                 </h3>
                 
                 <!-- 내역 출력 영역 -->
@@ -129,7 +129,7 @@
                         </button>
                     </div>
                     <div class="flex gap-2">
-                        <input type="text" id="story-input-text" placeholder="짧은 이야기를 나누어 보세요!" class="flex-1 p-2 text-xs border rounded-xl bg-white outline-none focus:border-blue-400">
+                        <input type="text" id="story-input-text" placeholder="짧은 이야기를 나누어 보세요!" class="flex-1 min-w-0 p-2 text-xs border rounded-xl bg-white outline-none focus:border-blue-400">
                         <button onclick="saveTodayStory()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-3 py-2 rounded-xl text-xs transition shrink-0">등록</button>
                     </div>
                 </div>
@@ -347,19 +347,16 @@
                 if(titleDisp) titleDisp.innerText = state.appTitle || "이준이의 해야 할 일";
 
                 const todoDateLabel = document.getElementById('todo-date-label');
-                const storyTitleDate = document.getElementById('story-title-date');
                 const backBtn = document.getElementById('back-to-today-btn');
 
                 if(viewDateStr === todayStr) {
                     if(todoDateLabel) todoDateLabel.innerText = "오늘";
-                    if(storyTitleDate) storyTitleDate.innerText = "오늘";
                     if(backBtn) backBtn.classList.add('hidden');
                 } else {
                     const md = viewDateStr.split('-');
                     if(md.length >= 3) {
                         const txt = `${parseInt(md[1])}월 ${parseInt(md[2])}일`;
                         if(todoDateLabel) todoDateLabel.innerText = txt;
-                        if(storyTitleDate) storyTitleDate.innerText = txt;
                     }
                     if(backBtn) backBtn.classList.remove('hidden');
                 }
