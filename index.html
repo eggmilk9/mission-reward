@@ -16,15 +16,35 @@
 </head>
 <body class="p-4 md:p-8 select-none">
 
-    <!-- 상단 헤더 -->
-    <div class="max-w-4xl mx-auto flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm">
-        <div>
-            <h1 id="app-title-display" class="text-xl md:text-2xl font-extrabold text-blue-600">이준이의 해야 할 일</h1>
-            <p id="current-date" class="text-sm text-gray-500 font-bold mt-1"></p>
+    <!-- 상단 헤더 및 포인트 영역 (그리드 정렬) -->
+    <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <!-- 타이틀 영역 (할 일 리스트 너비에 맞춤) -->
+        <div class="md:col-span-2 flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm">
+            <div>
+                <h1 id="app-title-display" class="text-xl md:text-2xl font-extrabold text-blue-600">이준이의 해야 할 일</h1>
+                <p id="current-date" class="text-sm text-gray-500 font-bold mt-1"></p>
+            </div>
+            <button onclick="toggleMode()" id="mode-btn" class="text-gray-300 hover:text-gray-500 font-bold p-2 text-xl transition bg-transparent border-none outline-none cursor-pointer">
+                +
+            </button>
         </div>
-        <button onclick="toggleMode()" id="mode-btn" class="text-gray-300 hover:text-gray-500 font-bold p-2 text-xl transition bg-transparent border-none outline-none cursor-pointer">
-            +
-        </button>
+
+        <!-- 슬림 포인트 보드 (줄이고 남은 영역에 배치) -->
+        <div class="bg-gradient-to-br from-yellow-400 to-orange-400 p-3 px-4 rounded-2xl shadow-sm text-white flex flex-col justify-center">
+            <div class="flex justify-between items-center">
+                <p class="text-xs font-bold opacity-90">현재 모은 포인트</p>
+                <p class="text-[10px] opacity-80"><span id="next-ticket-p">100</span>P 달성 시 소원쿠폰!</p>
+            </div>
+            <div class="flex items-center gap-3 mt-1.5">
+                <div class="flex items-baseline gap-0.5 shrink-0">
+                    <span id="current-points" class="text-2xl font-extrabold">0</span>
+                    <span class="text-xs font-bold">P</span>
+                </div>
+                <div class="flex-1 bg-white/20 rounded-full h-2 overflow-hidden">
+                    <div id="point-progress" class="bg-white h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- 메인 컨텐츠 -->
@@ -59,21 +79,8 @@
             </div>
         </div>
 
-        <!-- 우측 사이드바 (리워드, 캘린더, 오늘의 이야기) -->
+        <!-- 우측 사이드바 (쿠폰, 캘린더, 교환 일기) -->
         <div class="space-y-4">
-            <!-- 포인트 보드 -->
-            <div class="bg-gradient-to-br from-yellow-400 to-orange-400 p-6 rounded-3xl shadow-md text-white">
-                <p class="text-sm font-bold opacity-90">현재 모은 포인트</p>
-                <div class="flex items-baseline gap-1 mt-2">
-                    <span id="current-points" class="text-4xl font-extrabold">0</span>
-                    <span class="text-lg font-bold">P</span>
-                </div>
-                <div class="mt-4 bg-white/20 rounded-full h-3 overflow-hidden">
-                    <div id="point-progress" class="bg-white h-full transition-all duration-500" style="width: 0%"></div>
-                </div>
-                <p class="text-xs mt-2 opacity-80 text-right"><span id="next-ticket-p">100</span>P 달성 시 소원쿠폰 획득!</p>
-            </div>
-
             <!-- 소원쿠폰 보관함 -->
             <div onclick="openTicketBoxModal()" class="click-pulse bg-white p-5 rounded-3xl shadow-md border-2 border-orange-200 text-center cursor-pointer hover:bg-orange-50/50 transition-all active:scale-95">
                 <h3 class="text-gray-700 font-bold text-sm mb-3 text-left flex justify-between items-center">
@@ -102,10 +109,10 @@
                 <div id="calendar-days-grid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
             </div>
 
-            <!-- 📖 오늘의 이야기 -->
+            <!-- 📖 교환 일기 -->
             <div class="bg-white p-5 rounded-3xl shadow-md border border-gray-100 space-y-3">
                 <h3 class="font-extrabold text-gray-700 text-sm flex items-center gap-1.5">
-                    <span>📖</span> <span id="story-title-date">오늘</span>의 이야기
+                    <span>📖</span> <span id="story-title-date">오늘</span>의 교환 일기
                 </h3>
                 
                 <!-- 일기 내역 출력 영역 -->
@@ -113,16 +120,13 @@
                 
                 <!-- 일기 쓰기 영역 -->
                 <div class="bg-gray-50 p-3 rounded-2xl space-y-2.5 border border-gray-100">
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold text-gray-500">누가 쓰나요?</span>
-                        <div class="flex gap-1.5">
-                            <button id="writer-mom" onclick="selectStoryWriter('mom')" class="px-2.5 py-1 rounded-xl font-bold text-xs border transition-all bg-white border-gray-200 text-gray-600">
-                                👩 엄마
-                            </button>
-                            <button id="writer-child" onclick="selectStoryWriter('child')" class="px-2.5 py-1 rounded-xl font-bold text-xs border transition-all bg-white border-gray-200 text-gray-600">
-                                👦 이준이
-                            </button>
-                        </div>
+                    <div class="flex gap-1.5">
+                        <button id="writer-mom" onclick="selectStoryWriter('mom')" class="px-3 py-1 rounded-xl font-bold text-xs border transition-all bg-white border-gray-200 text-gray-600">
+                            엄마
+                        </button>
+                        <button id="writer-child" onclick="selectStoryWriter('child')" class="px-3 py-1 rounded-xl font-bold text-xs border transition-all bg-white border-gray-200 text-gray-600">
+                            준이
+                        </button>
                     </div>
                     <div class="flex gap-2">
                         <input type="text" id="story-input-text" placeholder="짧은 이야기를 나누어 보세요!" class="flex-1 p-2 text-xs border rounded-xl bg-white outline-none focus:border-blue-400">
@@ -443,7 +447,6 @@
 
                 const currPoints = document.getElementById('current-points'); if(currPoints) currPoints.innerText = state.points || 0;
                 
-                // 사용전 쿠폰 수량만 집계
                 const unusedTicketsCount = state.ticketList.filter(t => !t.isUsed).length;
                 const ticketCountDisp = document.getElementById('ticket-count-display'); if(ticketCountDisp) ticketCountDisp.innerText = unusedTicketsCount;
                 
@@ -491,7 +494,7 @@
             const dayStories = state.stories[viewDateStr] || [];
 
             if(dayStories.length === 0) {
-                displayArea.innerHTML = `<p class="text-center py-4 text-gray-400 text-xs font-bold">아직 기록된 이야기가 없어요 💬</p>`;
+                displayArea.innerHTML = `<p class="text-center py-4 text-gray-400 text-xs font-bold">아직 기록된 일기가 없어요 💬</p>`;
                 return;
             }
 
@@ -503,7 +506,7 @@
                 bubble.innerHTML = `
                     <span class="text-sm shrink-0">${isMom ? '👩' : '👦'}</span>
                     <div class="flex-1">
-                        <p class="font-extrabold text-[10px] ${isMom ? 'text-purple-600' : 'text-blue-600'}">${isMom ? '엄마' : '이준이'}</p>
+                        <p class="font-extrabold text-[10px] ${isMom ? 'text-purple-600' : 'text-blue-600'}">${isMom ? '엄마' : '준이'}</p>
                         <p class="text-gray-700 font-medium mt-0.5 whitespace-pre-wrap">${st.text}</p>
                     </div>
                     <button onclick="deleteStory(${index})" class="text-[10px] text-gray-300 hover:text-red-500 font-bold px-1 transition">✕</button>
@@ -520,11 +523,11 @@
             if(!momBtn || !childBtn) return;
 
             if(writer === 'mom') {
-                momBtn.className = "px-2.5 py-1 rounded-xl font-bold text-xs border transition-all bg-purple-500 border-purple-500 text-white shadow-sm";
-                childBtn.className = "px-2.5 py-1 rounded-xl font-bold text-xs border transition-all bg-white border-gray-200 text-gray-600";
+                momBtn.className = "px-3 py-1 rounded-xl font-bold text-xs border transition-all bg-purple-500 border-purple-500 text-white shadow-sm";
+                childBtn.className = "px-3 py-1 rounded-xl font-bold text-xs border transition-all bg-white border-gray-200 text-gray-600";
             } else {
-                momBtn.className = "px-2.5 py-1 rounded-xl font-bold text-xs border transition-all bg-white border-gray-200 text-gray-600";
-                childBtn.className = "px-2.5 py-1 rounded-xl font-bold text-xs border transition-all bg-blue-500 border-blue-500 text-white shadow-sm";
+                momBtn.className = "px-3 py-1 rounded-xl font-bold text-xs border transition-all bg-white border-gray-200 text-gray-600";
+                childBtn.className = "px-3 py-1 rounded-xl font-bold text-xs border transition-all bg-blue-500 border-blue-500 text-white shadow-sm";
             }
         }
 
@@ -532,7 +535,7 @@
             const inputEl = document.getElementById('story-input-text');
             if(!inputEl) return;
             const text = inputEl.value.trim();
-            if(!text) { alert("이야기 내용을 입력해 주세요!"); return; }
+            if(!text) { alert("일기 내용을 입력해 주세요!"); return; }
 
             if(!state.stories[viewDateStr]) state.stories[viewDateStr] = [];
             state.stories[viewDateStr].push({ writer: selectedWriter, text: text });
@@ -543,7 +546,7 @@
         }
 
         function deleteStory(index) {
-            if(confirm("이 이야기를 삭제할까요?")) {
+            if(confirm("이 일기를 삭제할까요?")) {
                 if(state.stories[viewDateStr]) {
                     state.stories[viewDateStr].splice(index, 1);
                     if(state.stories[viewDateStr].length === 0) delete state.stories[viewDateStr];
@@ -610,7 +613,6 @@
             render();
         }
 
-        // [핵심 변경사항] 지나간 날짜 및 임의 날짜에서도 자유롭게 체크/취소 가능하도록 제한 해제
         function toggleTask(taskId, points) {
             if (!state.completedLog[viewDateStr]) state.completedLog[viewDateStr] = [];
             const index = state.completedLog[viewDateStr].indexOf(taskId);
@@ -619,7 +621,6 @@
                 state.completedLog[viewDateStr].splice(index, 1);
                 state.points -= points;
                 
-                // 역차감 시 미사용 쿠폰 차감 방어 코드
                 while (state.points < 0 && state.ticketList.filter(t => !t.isUsed).length > 0) {
                     const unusedIndices = state.ticketList.map((t, i) => !t.isUsed ? i : -1).filter(i => i !== -1);
                     if (unusedIndices.length > 0) {
@@ -723,7 +724,6 @@
             }
         }
 
-        // [핵심 변경사항] 소원쿠폰 모달 내부에 사용가능 / 사용완료 영역을 분할 렌더링하고 상태이동 부여
         function openTicketBoxModal() {
             const unusedCount = state.ticketList.filter(t => !t.isUsed).length;
             const usedCount = state.ticketList.filter(t => t.isUsed).length;
@@ -739,12 +739,10 @@
                 return;
             }
 
-            // 사용 가능 쿠폰 섹션 생성
             const availableSection = document.createElement('div');
             availableSection.className = "space-y-3";
             availableSection.innerHTML = `<h3 class="font-extrabold text-xs text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl flex justify-between items-center"><span>🟢 사용 가능한 쿠폰</span> <span>${unusedCount}장</span></h3>`;
             
-            // 사용 완료 쿠폰 섹션 생성
             const usedSection = document.createElement('div');
             usedSection.className = "space-y-3 mt-6 pt-4 border-t border-gray-100";
             usedSection.innerHTML = `<h3 class="font-extrabold text-xs text-gray-400 bg-gray-50 px-3 py-1.5 rounded-xl flex justify-between items-center"><span>⚪ 사용 완료한 쿠폰</span> <span>${usedCount}장</span></h3>`;
@@ -836,7 +834,7 @@
         }
 
         function resetAllData() {
-            if(confirm("⚠️ 모은 포인트, 쿠폰, 모든 미션과 이야기가 전부 완전히 초기화됩니다! 그래도 할까요?")) {
+            if(confirm("⚠️ 모은 포인트, 쿠폰, 모든 미션과 일기가 전부 완전히 초기화됩니다! 그래도 할까요?")) {
                 localStorage.removeItem('child_reward_pad');
                 state = { tasks: [], points: 0, ticketList: [], ticketThreshold: 100, completedLog: {}, appTitle: "이준이의 해야 할 일", stories: {} };
                 cancelEditMode();
