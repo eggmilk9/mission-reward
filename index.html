@@ -141,7 +141,7 @@
     <div id="admin-view" class="max-w-4xl mx-auto mt-6 bg-white p-6 rounded-3xl shadow-md border-2 border-dashed border-gray-300 hidden">
         <h2 id="admin-form-title" class="text-lg font-bold text-purple-600 mb-4">🛠️ 부모님 관리자 메뉴 (미션 등록)</h2>
         
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-2xl mb-6 text-sm">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-2xl mb-4 text-sm">
             <div class="sm:col-span-2">
                 <label class="block font-bold text-gray-700 mb-1">🏠 메인 화면 타이틀 수정</label>
                 <input type="text" id="edit-app-title" placeholder="이준이의 해야 할 일" oninput="updateAppTitle(this.value)" class="w-full p-2.5 border rounded-xl bg-white font-bold">
@@ -170,7 +170,7 @@
             </div>
             <div>
                 <label class="block font-bold text-gray-700 mb-1">🎟️ 쿠폰 교환 기준 포인트</label>
-                <input type="number" id="ticket-threshold-setting" value="100" min="10" class="w-full p-2.5 border rounded-xl bg-white">
+                <input type="number" id="ticket-threshold-setting" value="100" min="10" onchange="updateTicketThreshold(this.value)" class="w-full p-2.5 border rounded-xl bg-white">
             </div>
             <div class="sm:col-span-2">
                 <label class="block font-bold text-gray-700 mb-2">🗓️ 반복할 요일 선택</label>
@@ -191,6 +191,16 @@
                     <button id="submit-task-btn" onclick="handleTaskSubmit()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-6 rounded-xl transition">➕ 미션 등록하기</button>
                 </div>
             </div>
+        </div>
+
+        <!-- ✨ 엄마 찬스! 보너스 포인트 지급 영역 -->
+        <div class="bg-amber-50 p-4 rounded-2xl mb-6 border border-amber-200 text-sm">
+            <label class="block font-bold text-amber-800 mb-1">✨ 엄마 찬스! 보너스 포인트 지급</label>
+            <div class="flex gap-2 mt-2">
+                <input type="number" id="bonus-points-input" placeholder="예: 10 또는 -10" class="flex-1 p-2.5 border rounded-xl bg-white outline-none focus:border-amber-400 font-bold">
+                <button onclick="awardBonusPoints()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 py-2.5 rounded-xl transition shrink-0">지급하기</button>
+            </div>
+            <p class="text-[11px] text-amber-600/80 mt-1.5">* 특별히 칭찬할 일이 있을 때 보너스를 주거나, 차감이 필요할 때 마이너스(-) 기호를 붙여 사용하세요.</p>
         </div>
 
         <div>
@@ -302,6 +312,46 @@
             const titleDisp = document.getElementById('app-title-display');
             if(titleDisp) titleDisp.innerText = state.appTitle;
             saveState();
+        }
+
+        function updateTicketThreshold(val) {
+            state.ticketThreshold = parseInt(val) || 100;
+            saveState();
+            render();
+        }
+
+        function awardBonusPoints() {
+            const bonusInput = document.getElementById('bonus-points-input');
+            if(!bonusInput) return;
+            const pts = parseInt(bonusInput.value) || 0;
+            if(pts === 0) { alert("지급하거나 차감할 포인트를 입력해주세요!"); return; }
+
+            state.points += pts;
+
+            // 차감 시 0 미만 처리 로직 (기존 쿠폰 회수 연동)
+            if (pts < 0) {
+                while (state.points < 0 && state.ticketList.filter(t => !t.isUsed).length > 0) {
+                    const unusedIndices = state.ticketList.map((t, i) => !t.isUsed ? i : -1).filter(i => i !== -1);
+                    if (unusedIndices.length > 0) {
+                        const lastUnusedIdx = unusedIndices[unusedIndices.length - 1];
+                        state.ticketList.splice(lastUnusedIdx, 1);
+                    }
+                    state.points += state.ticketThreshold;
+                }
+                if (state.points < 0) state.points = 0;
+            } else {
+                // 가산 시 기준 포인트 도달 및 초과하면 소원쿠폰 생성
+                while (state.points >= state.ticketThreshold) {
+                    state.points -= state.ticketThreshold;
+                    state.ticketList.push({ id: Date.now() + Math.random(), name: "✨ 터치해서 소원을 적으세요!", isUsed: false });
+                    showTicketModal();
+                }
+            }
+
+            alert(pts > 0 ? `🎉 보너스 포인트 ${pts}P가 지급되었습니다!` : `⚠️ 포인트 ${Math.abs(pts)}P가 차감되었습니다.`);
+            bonusInput.value = "";
+            saveState();
+            render();
         }
 
         function toggleMode() {
@@ -449,6 +499,9 @@
                 
                 const nextTicketP = document.getElementById('next-ticket-p'); if(nextTicketP) nextTicketP.innerText = state.ticketThreshold || 100;
                 
+                const thresholdInput = document.getElementById('ticket-threshold-setting');
+                if (thresholdInput) thresholdInput.value = state.ticketThreshold || 100;
+
                 const pointProgress = document.getElementById('point-progress');
                 if(pointProgress) {
                     const threshold = state.ticketThreshold || 100;
